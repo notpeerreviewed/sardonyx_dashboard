@@ -18,45 +18,45 @@ d3.csv('data/incidents.csv').then(function (data) {
         d.ConfirmedLongitude = +d.ConfirmedLongitude;
         d.date = dateFormatParser(d.date);
         d.date2 = dateFormat(d.date);
-        d.month = d3.timeMonth(d.date); 
+        d.month = d3.timeMonth(d.date);
         d.year = +d.year;
         d.geo = d.ConfirmedLatitude + "," + d.ConfirmedLongitude;
     });
-  
+
   console.log(data);
-  
+
   /* now we create the crossfilter and set up the dimensions and groups*/
   let ndx = crossfilter(data);
   let all = ndx.groupAll();
-  
-  
+
+
   /* create a dimension for monthly incidents */
   let monthlyDimension = ndx.dimension(function (d) {
         return d.month;
     });
-    
+
   let monthlyDimensionGroup = monthlyDimension.group();
-    
+
   /* create a dimension for SAR Category */
   let categoryDimension = ndx.dimension(function (d) {
         return d.Category;
     });
-    
+
   let categoryDimensionGroup = categoryDimension.group();
-  
+
   /* create a dimension for Environment */
   let environmentDimension = ndx.dimension(function (d) {
         return d.Environment;
     });
-    
+
   let environmentDimensionGroup = environmentDimension.group();
-  
-  
+
+
   /* create a dimension for map data */
   let mapDimension = ndx.dimension(function (d) {
         return d.geo;
     });
-    
+
   let mapDimensionGroup = mapDimension.group().reduce(
           function(p, v) {
               p.Environment = v.Environment;
@@ -71,10 +71,10 @@ d3.csv('data/incidents.csv').then(function (data) {
               return {count: 0};
           }
       );
-  
 
-  
-  
+
+
+
   /* build pie chart for Categories*/
   categoryChart
     .radius(80)
@@ -82,29 +82,29 @@ d3.csv('data/incidents.csv').then(function (data) {
     .group(categoryDimensionGroup)
     .transitionDuration(500)
     .controlsUseVisibility(true);
-    
-    
+
+
   /* build row chart for Environments*/
   environmentChart
     .dimension(environmentDimension)
     .group(environmentDimensionGroup)
     .transitionDuration(500)
     .controlsUseVisibility(true);
-    
-  
+
+
   /* build line chart for time series*/
   monthlySeries
     .dimension(monthlyDimension)
     .group(monthlyDimensionGroup)
-    .x(d3.scaleTime().domain(d3.extent(data, function(d) { 
-          return new Date(d.date); 
+    .x(d3.scaleTime().domain(d3.extent(data, function(d) {
+          return new Date(d.date);
         })))
     .transitionDuration(500)
     .elasticY(true)
     .controlsUseVisibility(true)
     .yAxisLabel("Incident count");
-    
-    
+
+
   /* build datatable */
   dataTable
     .dimension(monthlyDimension)
@@ -113,15 +113,15 @@ d3.csv('data/incidents.csv').then(function (data) {
                 format: function (d) {
                     return d.date2;
                 }
-            }, 
+            },
             'Category', 'Environment'])
     .size(5)
     .sortBy(function (d) {
             return d.date2;
         })
     .order(d3.ascending);
-  
-  
+
+
   mapChart
     .dimension(mapDimension)
 	  .group(mapDimensionGroup)
@@ -156,17 +156,21 @@ d3.csv('data/incidents.csv').then(function (data) {
                   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png'
               });
           });
-  
+
+  dc.override(mapChart, 'redraw', function() {
+        window.setTimeout(() => mapChart._redraw(), 500);
+    });
+
   // used to reset the map
   $("#mapReset").on('click', function() {
 		mapChart.map().setView([-40.77,173.59], 3);
 	 });
-  
-  
-  
+
+
+
   dc.renderAll();
-  
+
   dc.redrawAll();
-  
-  
+
+
 });
